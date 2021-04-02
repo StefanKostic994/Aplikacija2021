@@ -1,0 +1,11 @@
+export class LoginInfoAdministrtorDto{
+    administratorId: number;
+    username: string;
+    token: string;
+
+    constructor(id: number, username: string, token: string) {
+        this.administratorId = id;
+        this.username = username; 
+        this.token = token;
+    }
+}

@@ -29,6 +29,7 @@
     "@nestjsx/crud": "*",
     "@nestjsx/crud-request": "*",
     "@nestjsx/crud-typeorm": "*",
+    "jsonwebtoken": "^8.5.1",
     "mysql": "^2.18.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
