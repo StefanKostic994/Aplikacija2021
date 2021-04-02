@@ -52,7 +52,7 @@ export class AuthController {
 
         jwtData.ua = req.headers["user-agent"];
         
-        let token: string = jwt.sign(jwtData, jwtSecret);
+        let token: string = jwt.sign(jwtData.toPlainObject(), jwtSecret);
 
         const responseObject = new LoginInfoAdministrtorDto(
             administrator.administratorId,
@@ -65,3 +65,7 @@ export class AuthController {
     }
 
 }
+
+//"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbmlzdHJhdG9ySWQiOjEwLCJ
+//1c2VybmFtZSI6ImFkbWluIiwiZXh0IjoxNjE4NTk0MDQ2LjgzLCJpcCI6Ijo6MSIsInVh
+//IjoiUG9zdG1hblJ1bnRpbWUvNy4yNi4xMCIsImlhdCI6MTYxNzM4NDQ0Nn0.SF_G-l4tyuJdq_MYsJm24lPkHtNcEGGgBnAPhjTWtmc"
