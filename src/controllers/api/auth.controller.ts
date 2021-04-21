@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req } from "@nestjs/common";
+import { Body, Controller, Post, Put, Req } from "@nestjs/common";
 import { LoginAdministratorDto } from "src/dtos/administrator/login.administrator.dto";
 import { ApiResponse } from "src/misc/api.response.class";
 import { AdministratorService } from "src/services/administrator/administrator.service";
@@ -8,10 +8,15 @@ import * as jwt from 'jsonwebtoken';
 import { JwtDataAdministratorDto } from "src/dtos/administrator/jwt.data.administrator.dto";
 import { Request } from "express";
 import { jwtSecret } from "config/jwt.secret";
+import { UserRegistrationDto } from "src/dtos/user/user.registration.dto";
+import { UserService } from "src/services/user/user.service";
 
 @Controller('auth')
 export class AuthController {
-    constructor(public administratorService: AdministratorService) { }
+    constructor(
+        public administratorService: AdministratorService,
+        public userService: UserService    
+    ) { }
 
     @Post('login')
     async doLogin(@Body() data: LoginAdministratorDto, @Req() req: Request): Promise<LoginInfoAdministrtorDto |ApiResponse> {
@@ -64,8 +69,9 @@ export class AuthController {
 
     }
 
-}
+    @Put('user/register')
+    async userRegister(@Body() data: UserRegistrationDto) {
+        return await this.userService.register(data);
+    }
 
-//"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbmlzdHJhdG9ySWQiOjEwLCJ
-//1c2VybmFtZSI6ImFkbWluIiwiZXh0IjoxNjE4NTk0MDQ2LjgzLCJpcCI6Ijo6MSIsInVh
-//IjoiUG9zdG1hblJ1bnRpbWUvNy4yNi4xMCIsImlhdCI6MTYxNzM4NDQ0Nn0.SF_G-l4tyuJdq_MYsJm24lPkHtNcEGGgBnAPhjTWtmc"
+}
