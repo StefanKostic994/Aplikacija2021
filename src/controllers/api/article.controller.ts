@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Param, Patch, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Param, Patch, Post, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Crud } from "@nestjsx/crud";
 import { Article } from "src/entities/article.entity";
@@ -13,6 +13,8 @@ import * as fileType from 'file-type';
 import * as fs from 'fs';
 import * as sharp from 'sharp';
 import { EditArticleDto } from "src/dtos/article/edit.article.dto";
+import { AllowToRoles } from "src/misc/allow.to.roles.descriptor";
+import { RoleCheckerGuard } from "src/misc/role.checker.guard";
 
 @Controller('api/article')
 @Crud({
@@ -46,7 +48,22 @@ import { EditArticleDto } from "src/dtos/article/edit.article.dto";
         }
     },
     routes: {
-        exclude: [ 'updateOneBase', 'replaceOneBase', 'deleteOneBase' ],
+        only: [
+            'getOneBase',
+            'getManyBase'
+        ],
+        getOneBase: {
+            decorators: [
+                UseGuards(RoleCheckerGuard),
+                AllowToRoles('administrator','user')
+            ]
+        },
+        getManyBase: {
+            decorators: [
+                UseGuards(RoleCheckerGuard),
+                AllowToRoles('administrator','user')
+            ]
+        }
     }
 })
 export class ArticleController {
@@ -55,18 +72,24 @@ export class ArticleController {
         public photoService: PhotoService   
     ){ }
 
-    @Post('createFull')
+    @Post()
+    @UseGuards(RoleCheckerGuard)
+    @AllowToRoles("administrator")
     createFullArtice(@Body() data: AddArticleDto) {
         return this.service.createFullArtice(data);
     }
 
     @Patch(':id')
+    @UseGuards(RoleCheckerGuard)
+    @AllowToRoles("administrator")
     editFullArticle(@Param('id') id: number, @Body() data: EditArticleDto) {
         return this.service.editFullArticle(id,data);
     }
 
 
     @Post(':id/uploadPhoto/') //POST http://localhost:3000/api/article/:id/uploadPhoto/
+    @UseGuards(RoleCheckerGuard)
+    @AllowToRoles("administrator")
     @UseInterceptors(
         FileInterceptor('photo', {
             storage: diskStorage({
@@ -178,6 +201,8 @@ export class ArticleController {
     }
 
     @Delete(':articleId/deletePhoto/:photoId')
+    @UseGuards(RoleCheckerGuard)
+    @AllowToRoles("administrator")
     public async deletePhoto(
         @Param('articleId') articleId: number,
         @Param('photoId') photoId: number
