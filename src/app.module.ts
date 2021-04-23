@@ -17,10 +17,12 @@ import { ArticleController } from './controllers/api/article.controller';
 import { AuthController } from './controllers/api/auth.controller';
 import { CategoryController } from './controllers/api/category.controller';
 import { FeatureController } from './controllers/api/feature.controller';
+import { UserCartController } from './controllers/api/user.cart.controller';
 import { AppController } from './controllers/app.controller';
 import { AuthMiddleware } from './middlewares/auth.middleware';
 import { AdministratorService } from './services/administrator/administrator.service';
 import { ArticleService } from './services/article/article.service';
+import { CartService } from './services/cart/cart.service';
 import { CategoryService } from './services/category/category.service';
 import { FeatureService } from './services/feature/feature.service';
 import { PhotoService } from './services/photo/photo.service';
@@ -71,7 +73,8 @@ import { UserService } from './services/user/user.service';
     CategoryController,
     ArticleController,
     AuthController,
-    FeatureController
+    FeatureController,
+    UserCartController,
   ],
   providers: [
     AdministratorService,
@@ -79,7 +82,9 @@ import { UserService } from './services/user/user.service';
     ArticleService,
     PhotoService,
     FeatureService,
-    UserService
+    UserService,
+    CartService,
+
   ] ,
   exports: [
     AdministratorService,
