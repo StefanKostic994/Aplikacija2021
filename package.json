@@ -29,6 +29,7 @@
     "@nestjsx/crud": "*",
     "@nestjsx/crud-request": "*",
     "@nestjsx/crud-typeorm": "*",
+    "class-validator": "^0.13.1",
     "file-type": "^16.3.0",
     "jsonwebtoken": "^8.5.1",
     "mysql": "^2.18.1",
