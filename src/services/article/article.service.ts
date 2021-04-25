@@ -9,6 +9,7 @@ import { ApiResponse } from "src/misc/api.response.class";
 import { Repository } from "typeorm";
 import { EditAdministratorDto } from "src/dtos/administrator/edit.administrator.dto";
 import { EditArticleDto } from "src/dtos/article/edit.article.dto";
+import { ArticleSearchDto } from "src/dtos/article/article.search.dto";
 
 @Injectable()
 export class ArticleService extends TypeOrmCrudService<Article> {
@@ -113,6 +114,69 @@ export class ArticleService extends TypeOrmCrudService<Article> {
             ]
         });
 
+    }
+
+    async search(data: ArticleSearchDto): Promise<Article[]> {
+
+        const builder = await this.article.createQueryBuilder("article");
+
+        builder.innerJoin("article.articlePrices", "ap");
+        builder.leftJoin("article.articleFeatures", "af");
+
+        builder.where('article.categoryId = :id', {id: data.categoryId});
+
+        if (data.keywords && data.keywords.length > 0) {
+            builder.andWhere(`article.name LIKE :kw OR
+                            article.excert LIKE :kw OR
+                            article.description LIKE :kw`,
+                             {kw: + '%' + data.keywords + '%'});
+        }
+        if (data.keywords && typeof data.priceMin === 'number') {
+            builder.andWhere('ap.price >= :min', {min: data.priceMin});
+        }
+        if (data.keywords && typeof data.priceMax === 'number') {
+            builder.andWhere('ap.price <= :max', {max: data.priceMax});
+        }
+        if (data.keywords && data.features.length > 0) {
+            for (const feature of data.features) {
+                builder.andWhere('af.featureId = :fId AND af.value IN (:fVals)',
+                {
+                    fId: feature.featureId,
+                    fVals: feature.values
+                }
+                )
+            }
+        }
+        let orderBy = 'article.name';
+        let orderDirection: 'ASC' | 'DESC' = 'ASC';
+
+        if (data.orderBy) {
+            orderBy = data.orderBy;
+            if (orderBy === 'price') {
+                orderBy = 'af.price'; // Potencijalna greska ako ima vise cena
+            }
+        }
+        if (data.orderDirection) {
+            orderDirection = data.orderDirection;
+        }
+
+        builder.orderBy(orderBy,orderDirection);
+
+        let page = 0;
+        if (data.keywords && typeof data.page === 'number') {
+            page = data.page;
+        } 
+
+        let perPage: 5 | 10 | 25| 50 | 75 = 25;
+        if(data.keywords && typeof data.itemsPerPage === 'number') {
+            perPage = data.itemsPerPage;
+        }
+
+        builder.skip(page * perPage);
+        builder.take(perPage);
+
+        let items: Article[] = await builder.getMany();
+        return items;
     }
 
 }
