@@ -6,7 +6,7 @@ import { ArticlePrice } from "src/entities/article-price.entity";
 import { Article } from "src/entities/article.entity";
 import { AddArticleDto } from "src/dtos/article/add.article.dto";
 import { ApiResponse } from "src/misc/api.response.class";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { EditAdministratorDto } from "src/dtos/administrator/edit.administrator.dto";
 import { EditArticleDto } from "src/dtos/article/edit.article.dto";
 import { ArticleSearchDto } from "src/dtos/article/article.search.dto";
@@ -110,7 +110,8 @@ export class ArticleService extends TypeOrmCrudService<Article> {
                 "category",
                 "articleFeatures",
                 "features",
-                "articlePrices"
+                "articlePrices",
+                "photos"
             ]
         });
 
@@ -120,24 +121,34 @@ export class ArticleService extends TypeOrmCrudService<Article> {
 
         const builder = await this.article.createQueryBuilder("article");
 
-        builder.innerJoin("article.articlePrices", "ap");
-        builder.leftJoin("article.articleFeatures", "af");
+        builder.innerJoinAndSelect(
+            "article.articlePrices",
+             "ap",
+             "ap.createdAt = (SELECT MAX(ap.created_at) FROM article_price AS ap WHERE ap.article_id = article.article_id)"  //Ovo nije primer najbolje prakse
+            //Pametnije resenje bi bilo sa trigerom za najnoviji dodati price...
+             );
+        builder.leftJoinAndSelect("article.articleFeatures", "af");
 
-        builder.where('article.categoryId = :id', {id: data.categoryId});
+        await builder.where('article.categoryId = :id', {id: data.categoryId});
 
         if (data.keywords && data.keywords.length > 0) {
-            builder.andWhere(`article.name LIKE :kw OR
-                            article.excert LIKE :kw OR
-                            article.description LIKE :kw`,
-                             {kw: + '%' + data.keywords + '%'});
+            builder.andWhere(`(
+                                article.name LIKE :kw OR
+                                article.except LIKE :kw OR
+                                article.description LIKE :kw
+                            )`,
+                            { kw: '%' + data.keywords.trim() + '%' });
         }
-        if (data.keywords && typeof data.priceMin === 'number') {
-            builder.andWhere('ap.price >= :min', {min: data.priceMin});
+        
+        if (data.priceMin && typeof data.priceMin === 'number') {
+            console.log(data);
+            builder.andWhere('ap.price >= :min', { min: data.priceMin });
         }
-        if (data.keywords && typeof data.priceMax === 'number') {
+        if (data.priceMax && typeof data.priceMax === 'number') {
             builder.andWhere('ap.price <= :max', {max: data.priceMax});
         }
-        if (data.keywords && data.features.length > 0) {
+        
+        if (data.features && data.features.length > 0) {
             for (const feature of data.features) {
                 builder.andWhere('af.featureId = :fId AND af.value IN (:fVals)',
                 {
@@ -153,7 +164,10 @@ export class ArticleService extends TypeOrmCrudService<Article> {
         if (data.orderBy) {
             orderBy = data.orderBy;
             if (orderBy === 'price') {
-                orderBy = 'af.price'; // Potencijalna greska ako ima vise cena
+                orderBy = 'ap.price'; // Potencijalna greska ako ima vise cena
+            }
+            if (orderBy === 'name') {
+                orderBy = 'article.name'; // Potencijalna greska ako ima vise cena
             }
         }
         if (data.orderDirection) {
@@ -163,20 +177,29 @@ export class ArticleService extends TypeOrmCrudService<Article> {
         builder.orderBy(orderBy,orderDirection);
 
         let page = 0;
-        if (data.keywords && typeof data.page === 'number') {
+        if (data.page && typeof data.page === 'number') {
             page = data.page;
         } 
 
         let perPage: 5 | 10 | 25| 50 | 75 = 25;
-        if(data.keywords && typeof data.itemsPerPage === 'number') {
+        if(data.itemsPerPage && typeof data.itemsPerPage === 'number') {
             perPage = data.itemsPerPage;
         }
 
         builder.skip(page * perPage);
         builder.take(perPage);
 
-        let items: Article[] = await builder.getMany();
-        return items;
+        let articleIds = await (await builder.getMany()).map(article => article.articleId);
+        return await this.article.find({
+            where: { articleId: In(articleIds)},
+            relations: [
+                "category",
+                "articleFeatures",
+                "features",
+                "articlePrices",
+                "photos"
+            ]
+        });
     }
 
 }
